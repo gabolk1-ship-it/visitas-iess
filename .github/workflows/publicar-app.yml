@@ -1,6 +1,6 @@
 # Compila la app y la publica en GitHub Pages cada vez que se sube un cambio a la rama main.
-# Requiere: Settings > Pages > Source: GitHub Actions, y la variable de repositorio API_URL
-# (Settings > Secrets and variables > Actions > Variables) con la URL /exec de Apps Script.
+# Requiere: Settings > Pages > Source: GitHub Actions.
+# La URL del servidor (Apps Script /exec) está en app/.env.production.
 name: Publicar app
 on:
   push:
@@ -23,7 +23,6 @@ jobs:
       - run: npm run build
         working-directory: app
         env:
-          VITE_API_URL: ${{ vars.API_URL }}
           BASE: /${{ github.event.repository.name }}/
       - uses: actions/upload-pages-artifact@v3
         with: { path: app/dist }
