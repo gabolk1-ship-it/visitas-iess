@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generar llaves de supervisión · Visitas IESS</title>
+<style>
+ body{font-family:system-ui,sans-serif;max-width:760px;margin:24px auto;padding:0 16px;color:#1b1f24}
+ input,button,textarea{font:inherit;padding:10px;border-radius:8px;border:1px solid #c8ced6;width:100%;box-sizing:border-box}
+ button{background:#0b4f8a;color:#fff;border:0;font-weight:600;margin-top:10px;cursor:pointer}
+ textarea{height:120px;font-family:ui-monospace,monospace;font-size:12px}
+ .aviso{background:#fff6e0;color:#8a5a00;padding:10px;border-radius:8px}
+ label{display:block;margin-top:12px}
+</style>
+</head>
+<body>
+<h1>Llaves de supervisión</h1>
+<p>Esta página genera, <strong>dentro de su navegador</strong>, el par de llaves que protege las fotos. Nada se envía a internet.</p>
+<p class="aviso">Hágalo una sola vez. Si genera llaves nuevas, las fotos anteriores solo se podrán ver con la frase y las llaves anteriores. Guarde la frase secreta en un lugar seguro: sin ella, nadie podrá ver las fotos.</p>
+<label>Frase secreta de supervisión (mínimo 12 caracteres)<input id="f1" type="password"></label>
+<label>Repita la frase<input id="f2" type="password"></label>
+<button id="gen">Generar llaves</button>
+<p id="msg"></p>
+<label>1. Copie esto en Config → LLAVE_PUBLICA<textarea id="pub" readonly></textarea></label>
+<label>2. Copie esto en Config → LLAVE_PRIVADA_CIFRADA<textarea id="priv" readonly></textarea></label>
+<script>
+const b64 = (buf) => { const b = new Uint8Array(buf); let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode(...b.subarray(i, i + 0x8000)); return btoa(s); };
+document.getElementById('gen').onclick = async () => {
+  const f1 = document.getElementById('f1').value, f2 = document.getElementById('f2').value, msg = document.getElementById('msg');
+  if (f1.length < 12) { msg.textContent = 'La frase debe tener al menos 12 caracteres.'; return; }
+  if (f1 !== f2) { msg.textContent = 'Las frases no coinciden.'; return; }
+  msg.textContent = 'Generando…';
+  const RSA = { name: 'RSA-OAEP', hash: 'SHA-256' };
+  const par = await crypto.subtle.generateKey({ ...RSA, modulusLength: 3072, publicExponent: new Uint8Array([1, 0, 1]) }, true, ['wrapKey', 'unwrapKey', 'encrypt', 'decrypt']);
+  const pub = await crypto.subtle.exportKey('jwk', par.publicKey);
+  const pkcs8 = await crypto.subtle.exportKey('pkcs8', par.privateKey);
+  const sal = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)), iter = 310000;
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(f1), 'PBKDF2', false, ['deriveKey']);
+  const llave = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: sal, iterations: iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt']);
+  const datos = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, llave, pkcs8);
+  document.getElementById('pub').value = JSON.stringify({ kty: pub.kty, n: pub.n, e: pub.e, alg: 'RSA-OAEP-256' });
+  document.getElementById('priv').value = JSON.stringify({ v: 1, sal: b64(sal), iter, iv: b64(iv), datos: b64(datos) });
+  msg.textContent = 'Listo. Copie ambos textos en la pestaña Config de la hoja.';
+};
+</script>
+</body>
+</html>

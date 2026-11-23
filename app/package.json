@@ -1,0 +1,29 @@
+{
+  "name": "visitas-iess-pwa",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/copiar-tesseract.mjs && vite",
+    "build": "node scripts/copiar-tesseract.mjs && tsc -p . && vite build",
+    "preview": "vite preview",
+    "test": "vitest run && node pruebas/backend.test.mjs && node pruebas/r2-sigv4.test.mjs"
+  },
+  "dependencies": {
+    "dexie": "^4.4.7",
+    "jsqr": "^1.4.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tesseract.js": "^5.1.1"
+  },
+  "devDependencies": {
+    "@tesseract.js-data/eng": "^1.0.0",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21",
+    "vite-plugin-pwa": "^0.20.5",
+    "vitest": "^2.1.9"
+  }
+}
