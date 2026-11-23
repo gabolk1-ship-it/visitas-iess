@@ -164,7 +164,7 @@ function config_() {
 }
 
 function num_(clave, defecto) {
-  const v = parseFloat(config_()[clave]);
+  const v = parseFloat(String(config_()[clave]).replace(',', '.'));
   return isNaN(v) ? defecto : v;
 }
 
